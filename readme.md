@@ -23,7 +23,7 @@ Telegram: [zarazaex](https://t.me/zarazaexe)
 <br>
 Email: [zarazaex@tuta.io](mailto:zarazaex@tuta.io)
 <br>
-Site: [zarazaex.xyz](https://zarazaex.xyz)
+Site: [[DEL]](https://[DEL])
 <br>
 For: [olcNG](https://github.com/zarazaex69/olcng)
 
