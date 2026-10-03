@@ -600,36 +600,24 @@ object AngConfigManager {
                 return SubscriptionUpdateResult(skipCount = 1)
             }
 
-            val url = HttpUtil.toIdnUrl(it.subscription.url)
-            if (!Utils.isValidUrl(url)) {
+            val urls = it.subscription.url
+                .split('\n')
+                .map { u -> u.trim() }
+                .filter { u -> u.isNotEmpty() }
+                .map { u -> HttpUtil.toIdnUrl(u) }
+                .filter { u ->
+                    Utils.isValidUrl(u) && (it.subscription.allowInsecureUrl || Utils.isValidSubUrl(u))
+                }
+            if (urls.isEmpty()) {
                 return SubscriptionUpdateResult(failureCount = 1)
             }
-            if (!it.subscription.allowInsecureUrl) {
-                if (!Utils.isValidSubUrl(url)) {
-                    return SubscriptionUpdateResult(failureCount = 1)
-                }
-            }
-            Log.i(AppConfig.TAG, url)
             val userAgent = it.subscription.userAgent
 
-            val proxyTimeout = if (url.startsWith("https://key.zarazaex.xyz/sub")) 3000 else 5000
-            val directTimeout = if (url.startsWith("https://key.zarazaex.xyz/sub")) 3000 else 11000
-
-            var configText = try {
-                val httpPort = SettingsManager.getHttpPort()
-                HttpUtil.getUrlContentWithUserAgent(url, userAgent, proxyTimeout, httpPort)
-            } catch (e: Exception) {
-                Log.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
-                ""
+            // Каждая ссылка группы качается параллельно; успешные ответы объединяются
+            val texts = runBlocking(Dispatchers.IO) {
+                urls.map { url -> async { fetchSubscriptionText(url, userAgent) } }.awaitAll()
             }
-            if (configText.isEmpty()) {
-                configText = try {
-                    HttpUtil.getUrlContentWithUserAgent(url, userAgent, directTimeout)
-                } catch (e: Exception) {
-                    Log.e(AppConfig.TAG, "Update subscription: Failed to get URL content with user agent", e)
-                    ""
-                }
-            }
+            val configText = texts.filter { t -> t.isNotEmpty() }.joinToString("\n")
             if (configText.isEmpty()) {
                 return SubscriptionUpdateResult(failureCount = 1)
             }
@@ -651,6 +639,40 @@ object AngConfigManager {
             Log.e(AppConfig.TAG, "Failed to update config via subscription", e)
             return SubscriptionUpdateResult(failureCount = 1)
         }
+    }
+
+    /**
+     * Скачивает одну ссылку подписки (сначала через прокси, потом напрямую) и приводит
+     * ответ к тексту со ссылками конфигов: декодирует base64, а из HTML-обёрток
+     * (например, translate.yandex.ru) вытаскивает ссылки регуляркой.
+     */
+    private fun fetchSubscriptionText(url: String, userAgent: String?): String {
+        val proxyTimeout = 5000
+        val directTimeout = 11000
+        var text = try {
+            HttpUtil.getUrlContentWithUserAgent(url, userAgent, proxyTimeout, SettingsManager.getHttpPort())
+        } catch (e: Exception) {
+            Log.e(AppConfig.ANG_PACKAGE, "Update subscription: proxy not ready or other error", e)
+            ""
+        }
+        if (text.isEmpty()) {
+            text = try {
+                HttpUtil.getUrlContentWithUserAgent(url, userAgent, directTimeout)
+            } catch (e: Exception) {
+                Log.e(AppConfig.TAG, "Update subscription: failed to fetch $url", e)
+                ""
+            }
+        }
+        if (text.isEmpty()) return ""
+
+        val plain = if (text.contains("://")) text else Utils.decode(text)
+        if (!plain.contains("<html", ignoreCase = true) && !plain.contains("<body", ignoreCase = true)) {
+            return plain
+        }
+        val unescaped = plain.replace("&amp;", "&")
+        return Regex("""(vless|vmess|ss|ssr|trojan|hysteria2|hy2|tuic|wireguard)://[^\s<>"']+""")
+            .findAll(unescaped)
+            .joinToString("\n") { m -> m.value }
     }
 
     /**
