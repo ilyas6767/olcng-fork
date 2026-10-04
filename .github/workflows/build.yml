@@ -100,7 +100,7 @@ jobs:
     - name: Extract version from tag
       id: version
       run: |
-                  if [[ "${{ github.ref }}" == refs/tags/* ]]; then
+          if [[ "${{ github.ref }}" == refs/tags/* ]]; then
             TAG_NAME="${{ github.ref_name }}"
             VERSION_NAME="${TAG_NAME#v}"
           elif [[ "${{ github.event.inputs.release_tag }}" != "" ]]; then
