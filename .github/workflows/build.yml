@@ -147,7 +147,8 @@ jobs:
           exit 1
         fi
         chmod 755 gradlew
-        ./gradlew assembleRelease --info 2>&1 | grep -i "signing\|keystore" || true
+        ./gradlew assembleRelease --stacktrace
+        find app/build/outputs -name "*.apk"
     
     - name: Upload arm64-v8a APK
       uses: actions/upload-artifact@v7
