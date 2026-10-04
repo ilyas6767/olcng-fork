@@ -7,7 +7,7 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "xyz.zarazaex.olc"
+        applicationId = "vpn.olcng.fork"
         minSdk = 30
         targetSdk = 36
         
