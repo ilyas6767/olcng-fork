@@ -148,7 +148,7 @@ jobs:
           exit 1
         fi
         chmod 755 gradlew
-        ./gradlew assembleRelease --stacktrace
+        ./gradlew assemblePlaystoreRelease -PABI_FILTERS=arm64-v8a --stacktrace
         find app/build/outputs -name "*.apk"
     
     - name: Upload arm64-v8a APK
