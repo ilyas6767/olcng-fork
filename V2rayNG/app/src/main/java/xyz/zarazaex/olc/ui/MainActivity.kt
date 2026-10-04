@@ -201,7 +201,7 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
         }
 
         checkForUpdatesOnStartup()
-        showDonateDialogIfNeeded()
+        // showDonateDialogIfNeeded()
     }
 
     private fun setupViewModel() {
