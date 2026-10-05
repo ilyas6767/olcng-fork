@@ -145,13 +145,13 @@ jobs:
         chmod 755 gradlew
         ./gradlew assemblePlaystoreRelease -PABI_FILTERS=arm64-v8a --stacktrace
         find app/build/outputs -name "*.apk"
-        - name: Rename APK
-          run: |
-            cd "${{ github.workspace }}/V2rayNG/app/build/outputs/apk/playstore/release"
-            for f in *arm64-v8a*.apk; do
-              mv "$f" "olcng-fork-arm64-v8a-${VERSION_NAME}.apk"
-            done
-            ls -l
+    - name: Rename APK
+      run: |
+        cd "${{ github.workspace }}/V2rayNG/app/build/outputs/apk/playstore/release"
+        for f in *arm64-v8a*.apk; do
+          mv "$f" "olcng-fork-arm64-v8a-release-${VERSION_NAME}.apk"
+        done
+        ls -l
     - name: Upload arm64-v8a APK
       uses: actions/upload-artifact@v7
       if: ${{  success() }}
