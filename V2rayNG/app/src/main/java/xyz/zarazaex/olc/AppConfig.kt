@@ -134,7 +134,7 @@ object AppConfig {
 
     const val DNS_PROXY = "https://8.8.8.8/dns-query"
     const val DNS_DIRECT = "https://77.88.8.8/dns-query"
-    const val DNS_VPN = "https://8.8.8.8/dns-query"
+    const val DNS_VPN = "8.8.8.8"
     const val GEOSITE_PRIVATE = "geosite:private"
     const val GEOSITE_CN = "geosite:cn"
     const val GEOIP_PRIVATE = "geoip:private"
