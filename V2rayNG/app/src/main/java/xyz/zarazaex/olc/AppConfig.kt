@@ -133,7 +133,7 @@ object AppConfig {
     const val IP_API_URL = "https://api.ip.sb/geoip"
 
     const val DNS_PROXY = "https://8.8.8.8/dns-query"
-    const val DNS_DIRECT = "223.5.5.5"
+    const val DNS_DIRECT = "https://77.88.8.8/dns-query"
     const val DNS_VPN = "https://8.8.8.8/dns-query"
     const val GEOSITE_PRIVATE = "geosite:private"
     const val GEOSITE_CN = "geosite:cn"
