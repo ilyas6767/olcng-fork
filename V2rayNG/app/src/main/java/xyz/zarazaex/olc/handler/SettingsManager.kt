@@ -40,6 +40,7 @@ object SettingsManager {
         //ensureDefaultSubscription()
         DefaultSubscriptions.seedIfNeeded()
         initRoutingRulesets(context)
+        applyRussiaRoutingOnce(context)
         migrateServerListToSubscriptions()
         migrateHysteria2PinSHA256()
         migrateAutoSort()
