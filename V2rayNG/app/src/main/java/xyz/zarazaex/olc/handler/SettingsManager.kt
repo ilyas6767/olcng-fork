@@ -58,6 +58,13 @@ object SettingsManager {
             MmkvManager.encodeRoutingRulesets(rulesetList)
         }
     }
+    /** Один раз заменяет правила на пресет для России (прямые российские IP и домены). */
+    private fun applyRussiaRoutingOnce(context: Context) {
+        val key = "default_routing_russia_applied_v1"
+        if (MmkvManager.decodeSettingsBool(key, false)) return
+        resetRoutingRulesetsFromPresets(context, 4)
+        MmkvManager.encodeSettings(key, true)
+    }
 
     /**
      * Get preset routing rulesets.
