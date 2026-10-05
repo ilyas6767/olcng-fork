@@ -117,7 +117,7 @@ object AppConfig {
 
     /** URLs for various resources. */
     const val GITHUB_URL = "https://github.com"
-    const val GITHUB_RAW_URL = "https://raw.githubusercontent.com"
+    const val GITHUB_RAW_URL = "https://raw.githack.com"
     const val GITHUB_DOWNLOAD_URL = "$GITHUB_URL/%s/releases/latest/download"
     const val ANDROID_PACKAGE_NAME_LIST_URL = "$GITHUB_RAW_URL/2dust/androidpackagenamelist/master/proxy.txt"
     const val APP_URL = "$GITHUB_URL/ilyas6767/olcng-fork"
@@ -132,9 +132,9 @@ object AppConfig {
 //    const val IP_API_URL = "https://speed.cloudflare.com/meta"
     const val IP_API_URL = "https://api.ip.sb/geoip"
 
-    const val DNS_PROXY = "https://1.1.1.1/dns-query"
+    const val DNS_PROXY = "https://8.8.8.8/dns-query"
     const val DNS_DIRECT = "223.5.5.5"
-    const val DNS_VPN = "1.1.1.1"
+    const val DNS_VPN = "https://8.8.8.8/dns-query"
     const val GEOSITE_PRIVATE = "geosite:private"
     const val GEOSITE_CN = "geosite:cn"
     const val GEOIP_PRIVATE = "geoip:private"
