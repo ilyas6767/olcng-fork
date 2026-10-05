@@ -21,10 +21,10 @@ object DefaultSubscriptions {
 
     private val GROUPS: List<Pair<String, List<String>>> = listOf(
         "Черные списки" to listOf(
-            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS_mobile.txt",
-            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt",
-            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt",
-            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt",
+            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS_mobile.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt&lang=de-de",
             "https://gitverse.ru/RKP_channel/RKP_bypass_configs/content/master/blacklist.txt",
         ),
         "Белые списки" to listOf(
