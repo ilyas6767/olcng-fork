@@ -9,7 +9,7 @@ import xyz.zarazaex.olc.dto.SubscriptionItem
  */
 object DefaultSubscriptions {
     const val URL_SEPARATOR = "\n"
-    private const val SEED_KEY = "default_sub_groups_seeded_v1"
+    private const val SEED_KEY = "default_sub_groups_hash"
 
     /** Ссылки из старой встроенной базы: такие подписки удаляются при первом запуске. */
     private val LEGACY_URL_PREFIXES = listOf(
@@ -41,11 +41,17 @@ object DefaultSubscriptions {
     )
 
     /** Выполняется один раз: убирает старые встроенные подписки и создаёт группы. */
+        /** Пересоздаёт группы, если список ссылок в коде изменился. */
     fun seedIfNeeded() {
-        if (MmkvManager.decodeSettingsBool(SEED_KEY, false)) return
+        val signature = GROUPS.toString().hashCode().toString()
+        if (MmkvManager.decodeSettingsString(SEED_KEY) == signature) return
 
+        val groupNames = GROUPS.map { it.first }.toSet()
         MmkvManager.decodeSubscriptions()
-            .filter { sub -> LEGACY_URL_PREFIXES.any { sub.subscription.url.startsWith(it) } }
+            .filter { sub ->
+                sub.subscription.remarks in groupNames ||
+                    LEGACY_URL_PREFIXES.any { sub.subscription.url.startsWith(it) }
+            }
             .forEach { MmkvManager.removeSubscription(it.guid) }
 
         GROUPS.forEach { (name, urls) ->
@@ -58,6 +64,6 @@ object DefaultSubscriptions {
                 )
             )
         }
-        MmkvManager.encodeSettings(SEED_KEY, true)
+        MmkvManager.encodeSettings(SEED_KEY, signature)
     }
 }
