@@ -25,6 +25,7 @@ object DefaultSubscriptions {
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt",
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt",
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt",
+            "https://gitverse.ru/RKP_channel/RKP_bypass_configs/content/master/blacklist.txt",
         ),
         "Белые списки" to listOf(
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
@@ -34,7 +35,8 @@ object DefaultSubscriptions {
             "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta7.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta6.txt&lang=de-de",
-            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/RKPchannel/RKP_bypass_configs/refs/heads/main/whitelist.txt&lang=de-de",
+            "https://gitverse.ru/RKP_channel/RKP_bypass_configs/content/master/whitelist.txt",
+            "https://translate.yandex.ru/translate?url=https://hub.mos.ru/kfwl/auto/raw/main/wl&lang=de-de",
         ),
     )
 
