@@ -40,7 +40,7 @@ object SettingsManager {
         //ensureDefaultSubscription()
         DefaultSubscriptions.seedIfNeeded()
         initRoutingRulesets(context)
-        applyRussiaRoutingOnce(context)
+        applyRussiaDefaultsIfChanged(context)
         migrateServerListToSubscriptions()
         migrateHysteria2PinSHA256()
         migrateAutoSort()
@@ -58,12 +58,19 @@ object SettingsManager {
             MmkvManager.encodeRoutingRulesets(rulesetList)
         }
     }
-    /** Один раз заменяет правила на пресет для России (прямые российские IP и домены). */
-    private fun applyRussiaRoutingOnce(context: Context) {
-        val key = "default_routing_russia_applied_v1"
-        if (MmkvManager.decodeSettingsBool(key, false)) return
+    /** Применяет пресет маршрутизации для России и DNS, если они изменились в коде. */
+    private fun applyRussiaDefaultsIfChanged(context: Context) {
+        val preset = Utils.readTextFromAssets(context, RoutingType.WHITE_RUSSIA.fileName)
+        val signature = (preset + AppConfig.DNS_PROXY + AppConfig.DNS_DIRECT + AppConfig.DNS_VPN)
+            .hashCode().toString()
+        val key = "default_ru_routing_dns_hash"
+        if (MmkvManager.decodeSettingsString(key) == signature) return
+
         resetRoutingRulesetsFromPresets(context, 4)
-        MmkvManager.encodeSettings(key, true)
+        MmkvManager.encodeSettings(AppConfig.PREF_VPN_DNS, AppConfig.DNS_VPN)
+        MmkvManager.encodeSettings(AppConfig.PREF_REMOTE_DNS, AppConfig.DNS_PROXY)
+        MmkvManager.encodeSettings(AppConfig.PREF_DOMESTIC_DNS, AppConfig.DNS_DIRECT)
+        MmkvManager.encodeSettings(key, signature)
     }
 
     /**
