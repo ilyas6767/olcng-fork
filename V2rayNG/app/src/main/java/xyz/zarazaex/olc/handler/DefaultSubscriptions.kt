@@ -25,7 +25,9 @@ object DefaultSubscriptions {
             "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt&lang=de-de",
-            "https://gitverse.ru/RKP_channel/RKP_bypass_configs/content/master/blacklist.txt",
+            "https://hub.mos.ru/rkp/sub-roskompozor/raw/main/bl",
+            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/ImSketch1337/vless-/refs/heads/main/BLWLservers.txt&lang=de-de",
+            "https://sub.vlessfo.ru/vlessforu/working_configs.txt",
         ),
         "Белые списки" to listOf(
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
@@ -35,8 +37,8 @@ object DefaultSubscriptions {
             "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta7.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta6.txt&lang=de-de",
-            "https://gitverse.ru/RKP_channel/RKP_bypass_configs/content/master/whitelist.txt",
-            "https://translate.yandex.ru/translate?url=https://hub.mos.ru/kfwl/auto/raw/main/wl&lang=de-de",
+            "https://hub.mos.ru/rkp/sub-roskompozor/raw/main/wl",
+            "https://hub.mos.ru/kfwl/auto/raw/main/wl",
         ),
     )
 
