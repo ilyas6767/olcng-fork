@@ -21,15 +21,16 @@ object DefaultSubscriptions {
 
     private val GROUPS: List<Pair<String, List<String>>> = listOf(
         "Черные списки" to listOf(
-            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS_mobile.txt&lang=de-de",
-            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt&lang=de-de",
-            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt&lang=de-de",
-            "https://translate.yandex.ru/translate?url=https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt&lang=de-de",
+            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS_mobile.txt",
+            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt",
+            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt",
+            "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/WHITE-SNI-RU-all.txt",
             "https://hub.mos.ru/rkp/sub-roskompozor/raw/main/bl",
             "https://hub.mos.ru/kfwl/auto/-/raw/main/fullbl",
             "https://sub.vlessfo.ru/vlessforu/working_configs.txt",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/BLACK_LIST.txt",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/BLACKxBUNKER.txt",
+            "https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/WIFI.txt",
         ),
         "Белые списки" to listOf(
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
@@ -42,9 +43,10 @@ object DefaultSubscriptions {
             "https://hub.mos.ru/kfwl/auto/-/raw/main/wl",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITExBUNKER.txt",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITE_LIST.txt",
-            "https://github.com/LSO-LinSpisokObhod/LSO-LinSpisokObhod.github.io/raw/refs/heads/main/sub/LTE.txt",
-            "https://github.com/vessel-web/CoolSubs/raw/refs/heads/main/Cool-White.txt",
+            "https://translate.yandex.ru/translate?url=https://raw.githack.com/vessel-web/CoolSubs/refs/heads/main/Cool-White.txt&lang=de-de",
             "https://gitverse.ru/api/repos/bikinitw22/apelsintel/raw/branch/main/alive_plain_bs.txt",
+            "https://translate.yandex.ru/translate?url=https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/LTE.txt&lang=de-de",
+            "https://gidroksi.fun/msub/Shiwk62",
         ),
     )
 
