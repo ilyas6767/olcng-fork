@@ -291,7 +291,7 @@ private fun applyStrictFilter(configs: List<ProfileItem>): List<ProfileItem> {
     }
     return result
 }
-    private fun parseBatchConfig(servers: String?, subid: String, append: Boolean): Int {
+    private fun parseBatchConfig(servers: String?, subid: String, append: Boolean, strict: Boolean = false): Int {
         return synchronized(getSubscriptionLock(subid)) {
             try {
                 if (servers == null) {
@@ -315,27 +315,29 @@ private fun applyStrictFilter(configs: List<ProfileItem>): List<ProfileItem> {
                 }
 
                 val configs = mutableListOf<ProfileItem>()
-                servers.lines()
-                    .distinct()
-                    .reversed()
-                    .forEach {
-                        val config = parseConfig(it, subid, subItem)
-                        if (config != null) {
-                            configs.add(config)
-                        }
-                    }
+servers.lines()
+    .distinct()
+    .reversed()
+    .forEach {
+        val config = parseConfig(it, subid, subItem)
+        if (config != null) {
+            configs.add(config)
+        }
+    }
 
-                if (configs.isNotEmpty()) {
-                    if (!append) {
-                        MmkvManager.removeServerViaSubid(subid)
-                    }
-                    val keyToProfile = batchSaveConfigs(configs, subid, append)
-                    restoreOldServerData(keyToProfile, oldServerData)
-                    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
-                    matchKey?.let { MmkvManager.setSelectServer(it) }
-                }
+val finalConfigs = if (strict) applyStrictFilter(configs) else configs
 
-                return@synchronized configs.size
+if (finalConfigs.isNotEmpty()) {
+    if (!append) {
+        MmkvManager.removeServerViaSubid(subid)
+    }
+    val keyToProfile = batchSaveConfigs(finalConfigs, subid, append)
+    restoreOldServerData(keyToProfile, oldServerData)
+    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
+    matchKey?.let { MmkvManager.setSelectServer(it) }
+}
+
+return@synchronized finalConfigs.size
             } catch (e: Exception) {
                 Log.e(AppConfig.TAG, "Failed to parse batch config", e)
             }
