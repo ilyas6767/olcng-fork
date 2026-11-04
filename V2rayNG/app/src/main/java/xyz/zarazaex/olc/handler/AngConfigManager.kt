@@ -228,6 +228,69 @@ object AngConfigManager {
      * @param append Whether to append the configurations.
      * @return The number of configurations parsed.
      */
+     private val UUID_REGEX =
+    Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
+
+private val PLACEHOLDER_HOSTS = setOf("0.0.0.0", "127.0.0.1", "localhost", "::", "::1")
+
+/** Жёсткая проверка корректности конфига. */
+private fun isValidProfile(p: ProfileItem): Boolean {
+    // CUSTOM и POLICYGROUP не имеют обычного server/port
+    if (p.configType == EConfigType.CUSTOM || p.configType == EConfigType.POLICYGROUP) {
+        return true
+    }
+
+    val host = p.server?.trim()
+    if (host.isNullOrEmpty() || host.any { it.isWhitespace() }) return false
+    if (host.lowercase() in PLACEHOLDER_HOSTS) return false
+
+    val port = p.serverPort?.trim()?.toIntOrNull() ?: return false
+    if (port !in 1..65535) return false
+
+    val ok = when (p.configType) {
+        EConfigType.VMESS, EConfigType.VLESS ->
+            p.password?.trim()?.let { UUID_REGEX.matches(it) } == true
+        EConfigType.TROJAN, EConfigType.HYSTERIA2 ->
+            !p.password.isNullOrBlank()
+        EConfigType.SHADOWSOCKS ->
+            !p.password.isNullOrBlank() && !p.method.isNullOrBlank()
+        EConfigType.WIREGUARD ->
+            !p.secretKey.isNullOrBlank() && !p.publicKey.isNullOrBlank()
+        else -> true // SOCKS, HTTP
+    }
+    if (!ok) return false
+
+    // REALITY без публичного ключа не работает
+    if (p.security == "reality" && p.publicKey.isNullOrBlank()) return false
+
+    return true
+}
+
+/** Убирает некорректные, insecure и дублирующиеся конфиги. */
+private fun applyStrictFilter(configs: List<ProfileItem>): List<ProfileItem> {
+    var invalid = 0
+    var insecure = 0
+    var duplicate = 0
+    // ProfileItem.equals не учитывает configType, поэтому ключ — пара
+    val seen = HashSet<Pair<EConfigType, ProfileItem>>()
+
+    val result = configs.filter { p ->
+        when {
+            !isValidProfile(p) -> { invalid++; false }
+            p.insecure == true -> { insecure++; false }
+            !seen.add(p.configType to p) -> { duplicate++; false }
+            else -> true
+        }
+    }
+
+    if (invalid + insecure + duplicate > 0) {
+        Log.i(
+            AppConfig.TAG,
+            "Strict filter: removed invalid=$invalid, insecure=$insecure, duplicate=$duplicate"
+        )
+    }
+    return result
+}
     private fun parseBatchConfig(servers: String?, subid: String, append: Boolean): Int {
         return synchronized(getSubscriptionLock(subid)) {
             try {
