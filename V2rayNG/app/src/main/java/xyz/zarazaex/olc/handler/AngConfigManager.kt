@@ -749,15 +749,15 @@ return@synchronized finalConfigs.size
      * @return The number of configurations parsed.
      */
     private fun parseConfigViaSub(server: String?, subid: String, append: Boolean): Int {
-        var count = parseBatchConfig(Utils.decode(server), subid, append)
-        if (count <= 0) {
-            count = parseBatchConfig(server, subid, append)
-        }
-        if (count <= 0) {
-            count = parseCustomConfigServer(server, subid, append)
-        }
-        return count
+    var count = parseBatchConfig(Utils.decode(server), subid, append, strict = true)
+    if (count <= 0) {
+        count = parseBatchConfig(server, subid, append, strict = true)
     }
+    if (count <= 0) {
+        count = parseCustomConfigServer(server, subid, append)
+    }
+    return count
+}
 
     /**
      * Imports a URL as a subscription.
