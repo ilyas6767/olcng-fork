@@ -26,6 +26,7 @@ import xyz.zarazaex.olc.util.JsonUtil
 import xyz.zarazaex.olc.util.QRCodeDecoder
 import xyz.zarazaex.olc.util.Utils
 import java.net.URI
+import java.util.UUID
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -34,6 +35,9 @@ import kotlinx.coroutines.runBlocking
 object AngConfigManager {
 
     private val subscriptionLocks = mutableMapOf<String, Any>()
+
+    /** Хосты-заглушки, которые подписки используют для информационных записей. */
+    private val BAD_HOSTS = setOf("0.0.0.0", "127.0.0.1", "localhost", "::", "::1")
 
     private fun getSubscriptionLock(subid: String): Any {
         return synchronized(subscriptionLocks) {
@@ -226,72 +230,15 @@ object AngConfigManager {
      * @param servers The servers string.
      * @param subid The subscription ID.
      * @param append Whether to append the configurations.
+     * @param strict If true, drops invalid, insecure and duplicate configs (used on subscription update).
      * @return The number of configurations parsed.
      */
-     private val UUID_REGEX =
-    Regex("^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$")
-
-private val PLACEHOLDER_HOSTS = setOf("0.0.0.0", "127.0.0.1", "localhost", "::", "::1")
-
-/** Жёсткая проверка корректности конфига. */
-private fun isValidProfile(p: ProfileItem): Boolean {
-    // CUSTOM и POLICYGROUP не имеют обычного server/port
-    if (p.configType == EConfigType.CUSTOM || p.configType == EConfigType.POLICYGROUP) {
-        return true
-    }
-
-    val host = p.server?.trim()
-    if (host.isNullOrEmpty() || host.any { it.isWhitespace() }) return false
-    if (host.lowercase() in PLACEHOLDER_HOSTS) return false
-
-    val port = p.serverPort?.trim()?.toIntOrNull() ?: return false
-    if (port !in 1..65535) return false
-
-    val ok = when (p.configType) {
-        EConfigType.VMESS, EConfigType.VLESS ->
-            p.password?.trim()?.let { UUID_REGEX.matches(it) } == true
-        EConfigType.TROJAN, EConfigType.HYSTERIA2 ->
-            !p.password.isNullOrBlank()
-        EConfigType.SHADOWSOCKS ->
-            !p.password.isNullOrBlank() && !p.method.isNullOrBlank()
-        EConfigType.WIREGUARD ->
-            !p.secretKey.isNullOrBlank() && !p.publicKey.isNullOrBlank()
-        else -> true // SOCKS, HTTP
-    }
-    if (!ok) return false
-
-    // REALITY без публичного ключа не работает
-    if (p.security == "reality" && p.publicKey.isNullOrBlank()) return false
-
-    return true
-}
-
-/** Убирает некорректные, insecure и дублирующиеся конфиги. */
-private fun applyStrictFilter(configs: List<ProfileItem>): List<ProfileItem> {
-    var invalid = 0
-    var insecure = 0
-    var duplicate = 0
-    // ProfileItem.equals не учитывает configType, поэтому ключ — пара
-    val seen = HashSet<Pair<EConfigType, ProfileItem>>()
-
-    val result = configs.filter { p ->
-        when {
-            !isValidProfile(p) -> { invalid++; false }
-            p.insecure == true -> { insecure++; false }
-            !seen.add(p.configType to p) -> { duplicate++; false }
-            else -> true
-        }
-    }
-
-    if (invalid + insecure + duplicate > 0) {
-        Log.i(
-            AppConfig.TAG,
-            "Strict filter: removed invalid=$invalid, insecure=$insecure, duplicate=$duplicate"
-        )
-    }
-    return result
-}
-    private fun parseBatchConfig(servers: String?, subid: String, append: Boolean, strict: Boolean = false): Int {
+    private fun parseBatchConfig(
+        servers: String?,
+        subid: String,
+        append: Boolean,
+        strict: Boolean = false
+    ): Int {
         return synchronized(getSubscriptionLock(subid)) {
             try {
                 if (servers == null) {
@@ -314,34 +261,105 @@ private fun applyStrictFilter(configs: List<ProfileItem>): List<ProfileItem> {
                     emptyMap()
                 }
 
-                val configs = mutableListOf<ProfileItem>()
-servers.lines()
-    .distinct()
-    .reversed()
-    .forEach {
-        val config = parseConfig(it, subid, subItem)
-        if (config != null) {
-            configs.add(config)
-        }
-    }
+                val parsed = mutableListOf<ProfileItem>()
+                servers.lines()
+                    .distinct()
+                    .reversed()
+                    .forEach {
+                        val config = parseConfig(it, subid, subItem)
+                        if (config != null) {
+                            parsed.add(config)
+                        }
+                    }
 
-val finalConfigs = if (strict) applyStrictFilter(configs) else configs
+                val configs = if (strict) filterStrict(parsed) else parsed
 
-if (finalConfigs.isNotEmpty()) {
-    if (!append) {
-        MmkvManager.removeServerViaSubid(subid)
-    }
-    val keyToProfile = batchSaveConfigs(finalConfigs, subid, append)
-    restoreOldServerData(keyToProfile, oldServerData)
-    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
-    matchKey?.let { MmkvManager.setSelectServer(it) }
-}
+                if (configs.isNotEmpty()) {
+                    if (!append) {
+                        MmkvManager.removeServerViaSubid(subid)
+                    }
+                    val keyToProfile = batchSaveConfigs(configs, subid, append)
+                    restoreOldServerData(keyToProfile, oldServerData)
+                    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
+                    matchKey?.let { MmkvManager.setSelectServer(it) }
+                }
 
-return@synchronized finalConfigs.size
+                return@synchronized configs.size
             } catch (e: Exception) {
                 Log.e(AppConfig.TAG, "Failed to parse batch config", e)
             }
             return@synchronized 0
+        }
+    }
+
+    /**
+     * Strict filter for subscription updates: removes invalid, insecure and duplicate configs.
+     * Order of the remaining configs is preserved (first occurrence of a duplicate is kept).
+     *
+     * @param list Parsed configs.
+     * @return Filtered configs.
+     */
+    private fun filterStrict(list: List<ProfileItem>): List<ProfileItem> {
+        // ProfileItem.equals() ignores remarks but does not compare configType, so pair them.
+        val seen = HashSet<Pair<EConfigType, ProfileItem>>()
+        var invalid = 0
+        var insecure = 0
+        var duplicates = 0
+
+        val result = list.filter { p ->
+            when {
+                !isValidProfile(p) -> {
+                    invalid++
+                    false
+                }
+
+                p.insecure == true -> {
+                    insecure++
+                    false
+                }
+
+                !seen.add(p.configType to p) -> {
+                    duplicates++
+                    false
+                }
+
+                else -> true
+            }
+        }
+
+        Log.i(
+            AppConfig.TAG,
+            "Subscription filter: kept=${result.size}, invalid=$invalid, insecure=$insecure, duplicates=$duplicates"
+        )
+        return result
+    }
+
+    /**
+     * Checks that a parsed profile has the minimum data required to actually work.
+     */
+    private fun isValidProfile(p: ProfileItem): Boolean {
+        val host = p.server?.trim().orEmpty()
+        if (host.isEmpty() || host.any { it.isWhitespace() }) return false
+        if (host.lowercase() in BAD_HOSTS) return false
+
+        val port = p.serverPort?.trim()?.toIntOrNull() ?: return false
+        if (port !in 1..65535) return false
+
+        if (p.security == "reality" && p.publicKey.isNullOrBlank()) return false
+
+        return when (p.configType) {
+            EConfigType.VMESS, EConfigType.VLESS -> {
+                val id = p.password?.trim().orEmpty()
+                id.isNotEmpty() && runCatching { UUID.fromString(id) }.isSuccess
+            }
+
+            EConfigType.TROJAN, EConfigType.HYSTERIA2 -> !p.password.isNullOrBlank()
+
+            EConfigType.SHADOWSOCKS -> !p.password.isNullOrBlank() && !p.method.isNullOrBlank()
+
+            EConfigType.WIREGUARD -> !p.secretKey.isNullOrBlank() && !p.publicKey.isNullOrBlank()
+
+            else -> true
         }
     }
 
@@ -742,6 +760,7 @@ return@synchronized finalConfigs.size
 
     /**
      * Parses the configuration via a subscription.
+     * Uses the strict filter (invalid / insecure / duplicate configs are dropped).
      *
      * @param server The server string.
      * @param subid The subscription ID.
@@ -749,15 +768,15 @@ return@synchronized finalConfigs.size
      * @return The number of configurations parsed.
      */
     private fun parseConfigViaSub(server: String?, subid: String, append: Boolean): Int {
-    var count = parseBatchConfig(Utils.decode(server), subid, append, strict = true)
-    if (count <= 0) {
-        count = parseBatchConfig(server, subid, append, strict = true)
+        var count = parseBatchConfig(Utils.decode(server), subid, append, strict = true)
+        if (count <= 0) {
+            count = parseBatchConfig(server, subid, append, strict = true)
+        }
+        if (count <= 0) {
+            count = parseCustomConfigServer(server, subid, append)
+        }
+        return count
     }
-    if (count <= 0) {
-        count = parseCustomConfigServer(server, subid, append)
-    }
-    return count
-}
 
     /**
      * Imports a URL as a subscription.
