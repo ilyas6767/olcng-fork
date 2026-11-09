@@ -9,6 +9,7 @@ import xyz.zarazaex.olc.dto.SubscriptionItem
  */
 object DefaultSubscriptions {
     const val URL_SEPARATOR = "\n"
+    const val WHITELIST_NAME = "Белые списки"
     private const val SEED_KEY = "default_sub_groups_hash"
 
     /** Ссылки из старой встроенной базы: такие подписки удаляются при первом запуске. */
@@ -33,7 +34,7 @@ object DefaultSubscriptions {
             "https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/WIFI.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta7.txt&lang=de-de",
         ),
-        "Белые списки" to listOf(
+        WHITELIST_NAME to listOf(
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt&lang=de-de",
             "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_lite.txt",
