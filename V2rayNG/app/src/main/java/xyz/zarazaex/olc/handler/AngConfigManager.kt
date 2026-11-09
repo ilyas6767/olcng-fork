@@ -730,7 +730,7 @@ object AngConfigManager {
      * (например, translate.yandex.ru) вытаскивает ссылки регуляркой.
      */
     private fun fetchSubscriptionText(url: String, userAgent: String?): String {
-        val proxyTimeout = 5000
+        val proxyTimeout = 6000
         val directTimeout = 11000
         var text = try {
             HttpUtil.getUrlContentWithUserAgent(url, userAgent, proxyTimeout, SettingsManager.getHttpPort())
