@@ -38,7 +38,6 @@ object DefaultSubscriptions {
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt&lang=de-de",
             "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_lite.txt",
             "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt",
-            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta6.txt&lang=de-de",
             "https://hub.mos.ru/rkp/sub-roskompozor/raw/main/wl",
             "https://hub.mos.ru/kfwl/auto/-/raw/main/wl",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITExBUNKER.txt",
@@ -46,7 +45,6 @@ object DefaultSubscriptions {
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/vessel-web/CoolSubs/refs/heads/main/Cool-White.txt&lang=de-de",
             "https://gitverse.ru/api/repos/bikinitw22/apelsintel/raw/branch/main/alive_plain_bs.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/LTE.txt&lang=de-de",
-            "https://gidroksi.fun/msub/Shiwk62",
         ),
     )
 
