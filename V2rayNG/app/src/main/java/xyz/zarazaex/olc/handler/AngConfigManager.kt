@@ -275,14 +275,22 @@ object AngConfigManager {
                 val configs = if (strict) filterStrict(parsed) else parsed
 
                 if (configs.isNotEmpty()) {
-                    if (!append) {
-                        MmkvManager.removeServerViaSubid(subid)
-                    }
-                    val keyToProfile = batchSaveConfigs(configs, subid, append)
-                    restoreOldServerData(keyToProfile, oldServerData)
-                    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
-                    matchKey?.let { MmkvManager.setSelectServer(it) }
-                }
+    if (!append) {
+        MmkvManager.removeServerViaSubid(subid)
+    }
+    val keyToProfile = batchSaveConfigs(configs, subid, append)
+    restoreOldServerData(keyToProfile, oldServerData)
+    val matchKey = findMatchedProfileKey(keyToProfile, removedSelected)
+    matchKey?.let { MmkvManager.setSelectServer(it) }
+
+    // НОВОЕ: закреплённый «Автовыбор»
+    if (strict) {
+        val autoKey = AutoSelectManager.ensureProfile(subid)
+        if (autoKey != null && AutoSelectManager.isAutoProfile(removedSelected)) {
+            MmkvManager.setSelectServer(autoKey)
+        }
+    }
+}
 
                 return@synchronized configs.size
             } catch (e: Exception) {
