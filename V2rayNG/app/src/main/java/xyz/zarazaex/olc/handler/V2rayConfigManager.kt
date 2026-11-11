@@ -162,6 +162,9 @@ object V2rayConfigManager {
                     }
                 }
             }
+            .filter { profile ->
+                !AutoSelectManager.isAutoProfile(config) || !AutoSelectManager.isRussian(profile)
+            }
 
         val v2rayConfig = getV2rayMultipleConfig(context, config, configList) ?: return result
 
