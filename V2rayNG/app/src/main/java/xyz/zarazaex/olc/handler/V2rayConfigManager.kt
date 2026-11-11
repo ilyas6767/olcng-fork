@@ -162,9 +162,6 @@ object V2rayConfigManager {
                     }
                 }
             }
-            .filter { profile ->
-                !AutoSelectManager.isAutoProfile(config) || !AutoSelectManager.isRussian(profile)
-            }
 
         val v2rayConfig = getV2rayMultipleConfig(context, config, configList) ?: return result
 
@@ -922,7 +919,7 @@ object V2rayConfigManager {
                     v2rayConfig.observatory = V2rayConfig.ObservatoryObject(
                         subjectSelector = lstSelector,
                         probeUrl = MmkvManager.decodeSettingsString(AppConfig.PREF_DELAY_TEST_URL) ?: AppConfig.DELAY_TEST_URL,
-                        probeInterval = if (AutoSelectManager.isAutoProfile(config)) AutoSelectManager.PROBE_INTERVAL else "3m",
+                        probeInterval = "3m",
                         enableConcurrency = true
                     )
                 }
