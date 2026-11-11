@@ -922,7 +922,7 @@ object V2rayConfigManager {
                     v2rayConfig.observatory = V2rayConfig.ObservatoryObject(
                         subjectSelector = lstSelector,
                         probeUrl = MmkvManager.decodeSettingsString(AppConfig.PREF_DELAY_TEST_URL) ?: AppConfig.DELAY_TEST_URL,
-                        probeInterval = "3m",
+                        probeInterval = if (AutoSelectManager.isAutoProfile(config)) AutoSelectManager.PROBE_INTERVAL else "3m",
                         enableConcurrency = true
                     )
                 }
