@@ -8,6 +8,7 @@ import android.graphics.Color
 import android.net.Uri
 import android.net.VpnService
 import android.os.Bundle
+import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import android.view.Menu
@@ -15,6 +16,7 @@ import android.view.MenuItem
 import android.view.View
 import android.widget.TextView
 import androidx.core.graphics.drawable.DrawableCompat
+import androidx.core.net.toUri
 import com.google.android.material.color.MaterialColors
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
@@ -52,8 +54,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import android.provider.Settings
-import androidx.core.net.toUri
 
 class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelectedListener {
     private val binding by lazy {ActivityMainBinding.inflate(layoutInflater)}
@@ -63,6 +63,9 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
     private var liteActionJob: kotlinx.coroutines.Job? = null
     /** Был ли VPN уже запущен в предыдущем колбэке — чтобы детектировать момент подключения */
     private var wasRunning = false
+
+    /** Ссылка на APK, если пользователя отправили выдать разрешение на установку */
+    private var pendingUpdateUrl: String? = null
 
     val mainViewModel: MainViewModel by viewModels()
     private lateinit var groupPagerAdapter: GroupPagerAdapter
@@ -639,6 +642,13 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
     override fun onResume() {
         super.onResume()
         MessageUtil.sendMsg2Service(this, AppConfig.MSG_REGISTER_CLIENT, "")
+
+        // Вернулись с экрана «Установка из неизвестных источников» — продолжаем обновление
+        val url = pendingUpdateUrl
+        pendingUpdateUrl = null
+        if (url != null && Utils.canInstallApk(this)) {
+            downloadAndInstallUpdate(url)
+        }
     }
 
     override fun onPause() {
@@ -1186,13 +1196,49 @@ class MainActivity : HelperBaseActivity(), NavigationView.OnNavigationItemSelect
         val dialog = MaterialAlertDialogBuilder(this)
             .setMessage(message)
             .setPositiveButton(R.string.update_now) { _, _ ->
-                result.downloadUrl?.let {
-                    Utils.openUri(this, it)
-                }
+                result.downloadUrl?.let { downloadAndInstallUpdate(it) }
             }
             .create()
         dialog.setCustomTitle(buildDialogTitleWithClose(titleStr) { dialog.dismiss() })
         dialog.show()
+    }
+
+    /**
+     * Скачивает APK внутри приложения и запускает установку
+     * (та же логика, что в CheckUpdateActivity.downloadAndInstall).
+     * Если разрешения на установку ещё нет, открывает настройки и продолжает после возврата (см. onResume).
+     */
+    private fun downloadAndInstallUpdate(downloadUrl: String) {
+        if (!Utils.canInstallApk(this)) {
+            toast(R.string.update_install_permission_required)
+            pendingUpdateUrl = downloadUrl
+            try {
+                startActivity(
+                    Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES, "package:$packageName".toUri())
+                )
+            } catch (e: Exception) {
+                Log.e(AppConfig.TAG, "Failed to open install-sources settings: ${e.message}")
+            }
+            return
+        }
+
+        toast(R.string.update_downloading)
+        showLoading()
+
+        lifecycleScope.launch {
+            try {
+                val apk = UpdateCheckerManager.downloadApk(this@MainActivity, downloadUrl)
+                if (apk != null && Utils.installApk(this@MainActivity, apk)) {
+                    return@launch
+                }
+                toastError(R.string.update_download_failed)
+            } catch (e: Exception) {
+                Log.e(AppConfig.TAG, "Failed to download/install update: ${e.message}")
+                toastError(e.message ?: getString(R.string.update_download_failed))
+            } finally {
+                hideLoading()
+            }
+        }
     }
 
     private fun buildDialogTitleWithClose(title: String, onClose: () -> Unit): View {
