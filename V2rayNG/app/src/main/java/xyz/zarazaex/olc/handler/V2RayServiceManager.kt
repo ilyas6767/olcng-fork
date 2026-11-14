@@ -366,6 +366,92 @@ object V2RayServiceManager {
      * Gets the current service instance.
      * @return The current service instance, or null if not available.
      */
+     /** Для «Автовыбора» показываем в уведомлении реальный сервер. */
+private fun autoDisplayConfig(config: ProfileItem): ProfileItem {
+    val target = AutoSelectManager.currentTarget(config.subscriptionId)?.second ?: return config
+    val copy = JsonUtil.fromJson(JsonUtil.toJson(config), ProfileItem::class.java) ?: return config
+    copy.remarks = "${config.remarks}: ${target.remarks}"
+    return copy
+}
+
+/** Проверка через текущий конфиг: ядро само ходит через свой outbound. */
+private fun isCoreAlive(): Boolean {
+    val urls = listOf(SettingsManager.getDelayTestUrl(), SettingsManager.getDelayTestUrl(true))
+    for (url in urls) {
+        try {
+            if (coreController.measureDelay(url) >= 0) return true
+        } catch (e: Exception) {
+            Log.w(AppConfig.TAG, "AutoSelect: probe failed for $url: ${e.message}")
+        }
+    }
+    return false
+}
+
+private suspend fun nextAutoCandidate(subid: String): String? {
+    if (autoQueue.isEmpty()) {
+        autoQueue.addAll(AutoSelectManager.pickBest(subid, autoFailed))
+    }
+    return autoQueue.removeFirstOrNull()
+}
+
+/**
+ * Следит за текущим сервером «Автовыбора». Остальные серверы не трогает, пока
+ * текущий отвечает. Когда он перестаёт отвечать, выбирает следующего и перезапускает ядро.
+ */
+private fun startAutoSelectWatchdog(ctx: Context, subid: String) {
+    watchdogJob?.cancel()
+    watchdogJob = CoroutineScope(Dispatchers.IO).launch {
+        delay(WATCHDOG_GRACE_MS)
+        var fails = 0
+        while (isActive && coreController.isRunning) {
+            if (isCoreAlive()) {
+                if (autoFailed.isNotEmpty()) {
+                    autoFailed.clear()
+                    autoQueue.clear()
+                }
+                fails = 0
+                delay(WATCHDOG_INTERVAL_MS)
+                continue
+            }
+
+            fails++
+            Log.w(AppConfig.TAG, "AutoSelect: server not responding ($fails/$WATCHDOG_FAIL_THRESHOLD)")
+            if (fails < WATCHDOG_FAIL_THRESHOLD) {
+                delay(WATCHDOG_RETRY_MS)
+                continue
+            }
+
+            AutoSelectManager.getCurrentGuid()?.let { autoFailed.add(it) }
+            val next = nextAutoCandidate(subid)
+            if (next == null) {
+                Log.w(AppConfig.TAG, "AutoSelect: no candidates, will retry later")
+                autoFailed.clear()
+                autoQueue.clear()
+                fails = 0
+                delay(WATCHDOG_NO_CANDIDATE_MS)
+                continue
+            }
+
+            Log.i(AppConfig.TAG, "AutoSelect: switching to $next")
+            AutoSelectManager.setCurrentGuid(next)
+            restartCoreForAutoSelect(ctx)
+            return@launch
+        }
+    }
+}
+
+/**
+ * Перезапуск так же, как в MSG_STATE_RESTART, но в отдельной корутине: stopCoreLoop
+ * отменяет сторожа, и перезапуск не должен оборваться вместе с ним.
+ */
+private fun restartCoreForAutoSelect(ctx: Context) {
+    CoroutineScope(Dispatchers.IO).launch {
+        synchronized(operationLock) { isOperationInProgress = false }
+        serviceControl?.get()?.stopService()
+        delay(500L)
+        startVService(ctx)
+    }
+}
     private fun getService(): Service? {
         return serviceControl?.get()?.getService()
     }
