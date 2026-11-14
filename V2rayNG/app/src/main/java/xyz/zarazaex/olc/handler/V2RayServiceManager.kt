@@ -31,6 +31,16 @@ import java.lang.ref.SoftReference
 
 object V2RayServiceManager {
 
+    // Автовыбор
+    private const val WATCHDOG_GRACE_MS = 8_000L          // ждать после старта ядра
+    private const val WATCHDOG_INTERVAL_MS = 20_000L      // период проверки, пока всё работает
+    private const val WATCHDOG_RETRY_MS = 5_000L          // перепроверка после первой неудачи
+    private const val WATCHDOG_FAIL_THRESHOLD = 3         // неудач подряд до переключения
+    private const val WATCHDOG_NO_CANDIDATE_MS = 30_000L  // пауза, если переключаться не на что
+
+    private var watchdogJob: Job? = null
+    private val autoFailed = mutableSetOf<String>()
+    private val autoQueue = ArrayDeque<String>()
     private val coreController: CoreController = V2RayNativeManager.newCoreController(CoreCallback())
     private val mMsgReceive = ReceiveMessageHandler()
     private var currentConfig: ProfileItem? = null
@@ -96,6 +106,8 @@ object V2RayServiceManager {
     fun stopVService(context: Context) {
         Log.i(AppConfig.TAG, "StartCore-Manager: stopVService called")
         isIntentionalStop = true
+        autoFailed.clear()
+        autoQueue.clear()
         val svc = serviceControl?.get()
         if (svc != null) {
             svc.stopService()
@@ -219,7 +231,7 @@ object V2RayServiceManager {
             return false
         }
 
-        currentConfig = config
+        currentConfig = if (AutoSelectManager.isAutoProfile(config)) autoDisplayConfig(config) else config
         var tunFd = vpnInterface?.fd ?: 0
         if (SettingsManager.isUsingHevTun()) {
             tunFd = 0
@@ -257,6 +269,8 @@ object V2RayServiceManager {
      * @return True if the core was stopped successfully, false otherwise.
      */
     fun stopCoreLoop(): Boolean {
+        watchdogJob?.cancel()
+        watchdogJob = null
         val service = getService() ?: return false
 
         try {
