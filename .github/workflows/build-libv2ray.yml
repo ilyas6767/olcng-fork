@@ -123,7 +123,7 @@ jobs:
           ls -lh signed
 
       - name: Upload signed APKs
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: olcng-${{ inputs.xray_version }}-${{ inputs.build_type }}-signed
           path: signed/*.apk
