@@ -1,0 +1,128 @@
+name: Bump Xray-core
+
+# Обновляет версию Xray-core в AndroidLibXrayLite/go.mod и go.sum. APK не собирает:
+# после него запустите обычный "Build APK".
+
+on:
+  workflow_dispatch:
+    inputs:
+      xray_version:
+        description: "Тег Xray-core (например v26.11.9). Пусто — самый новый релиз"
+        required: false
+        default: ""
+      create_pr:
+        description: "Создать Pull Request вместо прямого коммита в ветку"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Setup Go
+        uses: actions/setup-go@v6
+        with:
+          go-version-file: AndroidLibXrayLite/go.mod
+          cache-dependency-path: AndroidLibXrayLite/go.sum
+
+      # Теги Xray (v26.x.y) не подходят Go-модулям, поэтому тег переводим в хеш коммита
+      - name: Resolve target version
+        id: target
+        env:
+          GH_TOKEN: ${{ github.token }}
+          XRAY_VERSION: ${{ inputs.xray_version }}
+        run: |
+          set -euo pipefail
+          TAG="$XRAY_VERSION"
+          if [ -z "$TAG" ]; then
+            TAG=$(gh api "repos/XTLS/Xray-core/releases?per_page=1" --jq '.[0].tag_name')
+            echo "Самый новый релиз: $TAG"
+          fi
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "Неожиданный формат тега: '$TAG'" >&2
+            exit 1
+          fi
+
+          SHA=$(git ls-remote https://github.com/XTLS/Xray-core \
+            "refs/tags/${TAG}" "refs/tags/${TAG}^{}" | tail -n1 | cut -f1)
+          if [ -z "$SHA" ]; then
+            echo "Тег ${TAG} не найден в XTLS/Xray-core" >&2
+            exit 1
+          fi
+          echo "Xray-core ${TAG} -> commit ${SHA}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Update go.mod
+        id: bump
+        working-directory: AndroidLibXrayLite
+        env:
+          SHA: ${{ steps.target.outputs.sha }}
+        run: |
+          set -euo pipefail
+          OLD=$(go list -m -f '{{.Version}}' github.com/xtls/xray-core)
+          go get "github.com/xtls/xray-core@${SHA}"
+          go mod tidy
+          NEW=$(go list -m -f '{{.Version}}' github.com/xtls/xray-core)
+          echo "Xray-core: $OLD -> $NEW"
+          echo "old=$OLD" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW" >> "$GITHUB_OUTPUT"
+
+          if git diff --quiet -- go.mod go.sum; then
+            echo "Версия уже актуальна, менять нечего."
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            git diff --stat -- go.mod go.sum
+          fi
+
+      # Быстрая проверка, что Go-обёртка libv2ray компилируется с новым ядром.
+      # (Линковку под Android проверяет сам Build APK.)
+      - name: Compile check (libv2ray)
+        if: steps.bump.outputs.changed == 'true'
+        working-directory: AndroidLibXrayLite
+        run: go build ./...
+
+      - name: Commit directly
+        if: steps.bump.outputs.changed == 'true' && !inputs.create_pr
+        env:
+          TAG: ${{ steps.target.outputs.tag }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add AndroidLibXrayLite/go.mod AndroidLibXrayLite/go.sum
+          git commit -m "Update Xray-core to ${TAG}"
+          git push
+
+      - name: Open pull request
+        if: steps.bump.outputs.changed == 'true' && inputs.create_pr
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.target.outputs.tag }}
+          OLD: ${{ steps.bump.outputs.old }}
+          NEW: ${{ steps.bump.outputs.new }}
+          BASE_BRANCH: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          BRANCH="bump-xray-${TAG}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add AndroidLibXrayLite/go.mod AndroidLibXrayLite/go.sum
+          git commit -m "Update Xray-core to ${TAG}"
+          git push -u origin "$BRANCH"
+          gh pr create \
+            --base "$BASE_BRANCH" \
+            --head "$BRANCH" \
+            --title "Update Xray-core to ${TAG}" \
+            --body "Автообновление ядра: \`${OLD}\` -> \`${NEW}\`.
+
+          Перед слиянием запустите Build APK на ветке \`${BRANCH}\` и проверьте сборку."
