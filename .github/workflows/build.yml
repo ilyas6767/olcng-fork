@@ -61,10 +61,11 @@ jobs:
       run: |
         cp -r ${{ github.workspace }}/libs ${{ github.workspace }}/V2rayNG/app
 
+    # Версия Go берётся из go.mod (после обновления Xray-core там go 1.27)
     - name: Setup Go
       uses: actions/setup-go@v6
       with:
-        go-version: '1.22'
+        go-version-file: AndroidLibXrayLite/go.mod
         cache-dependency-path: AndroidLibXrayLite/go.sum
 
     - name: Build libv2ray
@@ -80,7 +81,8 @@ jobs:
         bash gen_assets.sh download
         cp -v data/*.dat assets/
         go mod tidy
-        gomobile bind -v -androidapi 24 -trimpath -ldflags='-s -w -buildid=' -o libv2ray.aar ./
+        # -checklinkname=0: Go 1.27 блокирует linkname из wlynxg/anet на net.zoneCache
+        gomobile bind -v -androidapi 24 -trimpath -ldflags='-s -w -buildid= -checklinkname=0' -o libv2ray.aar ./
         popd
         
         mkdir -p V2rayNG/app/libs/
