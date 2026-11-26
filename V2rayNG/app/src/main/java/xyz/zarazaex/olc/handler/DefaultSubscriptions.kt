@@ -14,8 +14,6 @@ object DefaultSubscriptions {
 
     /** Ссылки из старой встроенной базы: такие подписки удаляются при первом запуске. */
     private val LEGACY_URL_PREFIXES = listOf(
-        "https://raw.githubusercontent.com/igareck/vpn-configs-for-russia/",
-        "https://raw.githubusercontent.com/zieng2/wl/",
         "https://raw.githubusercontent.com/whoahaow/rjsxrd/",
         "https://key.zarazaex.xyz/sub",
     )
@@ -43,6 +41,7 @@ object DefaultSubscriptions {
             "https://hub.mos.ru/kfwl/auto/-/raw/main/wl",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITExBUNKER.txt",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITE_LIST.txt",
+            "https://translate.yandex.ru/translate?url=https://raw.githack.com/ANT1VEN0M/Bunker-Auto-Engine/refs/heads/main/sub/bs.txt&lang=de-de"
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/vessel-web/CoolSubs/refs/heads/main/Cool-White.txt&lang=de-de",
             "https://gitverse.ru/api/repos/bikinitw22/apelsintel/raw/branch/main/alive_plain_bs.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/LTE.txt&lang=de-de",
