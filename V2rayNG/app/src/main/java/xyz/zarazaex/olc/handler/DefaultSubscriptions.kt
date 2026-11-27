@@ -40,7 +40,6 @@ object DefaultSubscriptions {
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/WHITE-CIDR-RU-all.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/zieng2/wl/refs/heads/main/vless_lite.txt&lang=de-de",
-            "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/zieng2/wl/refs/heads/main/vless_universal.txt&lang=de-de",
             "https://hub.mos.ru/kfwl/auto/-/raw/main/wl",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITExBUNKER.txt",
