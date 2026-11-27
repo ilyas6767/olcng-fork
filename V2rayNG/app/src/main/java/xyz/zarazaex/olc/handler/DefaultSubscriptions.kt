@@ -35,6 +35,10 @@ object DefaultSubscriptions {
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/BLACKxBUNKER.txt",
             "https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/WIFI.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Maskkost93/kizyak-vpn-4.0/refs/heads/main/kizyakbeta7.txt&lang=de-de",
+            "https://gate-v1.aska.not-a-projects.xyz/a-sb/djMsOTMzLDE3OTUzNTg5ODA.fuk3an5Hg6K-zd90Yge3ZJeyfVXiHiwnazAhUMiXnrQ",
+            "https://ghfast.top/https://raw.githubusercontent.com/ANT1VEN0M/Bunker-Auto-Engine/main/sub/discord_b64.txt",
+            "https://gist.githubusercontent.com/Diman331/8c868070c0b5a5ec0c7d94507717b67b/raw/subscription.txt",
+            "https://ghfast.top/https://raw.githubusercontent.com/GooseDev72/netherite-parser/refs/heads/main/sub/default",
         ),
         WHITELIST_NAME to listOf(
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/igareck/vpn-configs-for-russia/main/Vless-Reality-White-Lists-Rus-Mobile.txt&lang=de-de",
@@ -48,6 +52,9 @@ object DefaultSubscriptions {
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/vessel-web/CoolSubs/refs/heads/main/Cool-White.txt&lang=de-de",
             "https://gitverse.ru/api/repos/bikinitw22/apelsintel/raw/branch/main/alive_plain_bs.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/LTE.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/ksenkovsolo/HardVPN-bypass-WhiteLists-/refs/heads/main/vpn-lte/WHITELIST-ALL.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/Andrejewild/bypass-whitelist-vpn/refs/heads/main/sub.txt&lang=de-de",
+            "https://translate.yandex.ru/translate?url=https://raw.githubusercontent.com/aviamastersgh/vpn-free-russia/refs/heads/main/ru_configs.txt&lang=de-de",
         ),
     )
 
