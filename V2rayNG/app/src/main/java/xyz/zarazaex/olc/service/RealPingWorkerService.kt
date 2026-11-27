@@ -14,6 +14,7 @@ import kotlinx.coroutines.launch
 import xyz.zarazaex.olc.AppConfig
 import xyz.zarazaex.olc.dto.PingProgressUpdate
 import xyz.zarazaex.olc.dto.PingResultItem
+import xyz.zarazaex.olc.handler.AutoSelectManager
 import xyz.zarazaex.olc.handler.MmkvManager
 import xyz.zarazaex.olc.handler.SettingsManager
 import xyz.zarazaex.olc.handler.V2RayNativeManager
@@ -69,7 +70,12 @@ class RealPingWorkerService(
                 }
                 val deferredItems = shuffledGuids.map { guid ->
                     async(Dispatchers.IO) {
-                        val configResult = V2rayConfigManager.getV2rayConfig4Speedtest(context, guid)
+                        // «Автовыбор» измеряем по его текущему серверу, а не как группу из сотен
+                        // серверов; результат при этом записывается на сам профиль «Автовыбор».
+                        val configResult = V2rayConfigManager.getV2rayConfig4Speedtest(
+                            context,
+                            AutoSelectManager.resolveGuid(guid)
+                        )
                         if (configResult.status) {
                             PingItem(guid, configResult.content)
                         } else {
