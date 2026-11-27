@@ -10,7 +10,11 @@ import xyz.zarazaex.olc.dto.SubscriptionItem
 object DefaultSubscriptions {
     const val URL_SEPARATOR = "\n"
     const val WHITELIST_NAME = "Белые списки"
+    const val BLACKLIST_NAME = "Черные списки"
     private const val SEED_KEY = "default_sub_groups_hash"
+
+    /** Подписки, в которых закреплён профиль «Автовыбор» (см. AutoSelectManager). */
+    val AUTO_SELECT_NAMES: Set<String> = setOf(WHITELIST_NAME, BLACKLIST_NAME)
 
     /** Ссылки из старой встроенной базы: такие подписки удаляются при первом запуске. */
     private val LEGACY_URL_PREFIXES = listOf(
@@ -19,7 +23,7 @@ object DefaultSubscriptions {
     )
 
     private val GROUPS: List<Pair<String, List<String>>> = listOf(
-        "Черные списки" to listOf(
+        BLACKLIST_NAME to listOf(
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS_mobile.txt",
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_VLESS_RUS.txt",
             "https://gitlab.com/igareck/vpn-configs-for-russia/-/raw/main/BLACK_SS%2BAll_RUS.txt",
@@ -41,15 +45,14 @@ object DefaultSubscriptions {
             "https://hub.mos.ru/kfwl/auto/-/raw/main/wl",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITExBUNKER.txt",
             "https://hub.mos.ru/akelladejavu/bunker/-/raw/main/WHITE_LIST.txt",
-            "https://translate.yandex.ru/translate?url=https://raw.githack.com/ANT1VEN0M/Bunker-Auto-Engine/refs/heads/main/sub/bs.txt&lang=de-de"
+            "https://translate.yandex.ru/translate?url=https://raw.githack.com/ANT1VEN0M/Bunker-Auto-Engine/refs/heads/main/sub/bs.txt&lang=de-de",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/vessel-web/CoolSubs/refs/heads/main/Cool-White.txt&lang=de-de",
             "https://gitverse.ru/api/repos/bikinitw22/apelsintel/raw/branch/main/alive_plain_bs.txt",
             "https://translate.yandex.ru/translate?url=https://raw.githack.com/linspisokobhod/linspisokobhod.github.io/refs/heads/main/sub/LTE.txt&lang=de-de",
         ),
     )
 
-    /** Выполняется один раз: убирает старые встроенные подписки и создаёт группы. */
-        /** Пересоздаёт группы, если список ссылок в коде изменился. */
+    /** Пересоздаёт группы, если список ссылок в коде изменился. */
     fun seedIfNeeded() {
         val signature = GROUPS.toString().hashCode().toString()
         if (MmkvManager.decodeSettingsString(SEED_KEY) == signature) return

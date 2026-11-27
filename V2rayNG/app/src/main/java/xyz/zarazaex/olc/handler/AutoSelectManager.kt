@@ -12,12 +12,16 @@ import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 
 /**
- * Закреплённый профиль «Автовыбор» в подписке «Белые списки».
+ * Закреплённый профиль «Автовыбор» в подписках «Белые списки» и «Черные списки»
+ * (см. DefaultSubscriptions.AUTO_SELECT_NAMES).
  *
  * «Автовыбор» — маркерный профиль (POLICYGROUP с фиксированным remarks). При запуске он
- * превращается в обычный конфиг ОДНОГО сервера (см. currentTarget). Остальные серверы
- * проверяются только тогда, когда текущий перестал отвечать (см. pickBest).
+ * превращается в обычный конфиг ОДНОГО сервера (см. currentTarget / resolveGuid).
+ * Остальные серверы подписки проверяются только тогда, когда текущий перестал отвечать
+ * (см. pickBest и сторож в V2RayServiceManager).
  * Серверы из России в выборку не попадают (см. isRussian).
+ *
+ * Состояние (текущий сервер) хранится отдельно для каждой подписки.
  */
 object AutoSelectManager {
 
@@ -40,28 +44,35 @@ object AutoSelectManager {
                 && profile.remarks == REMARKS
     }
 
+    /** Относится ли подписка к тем, где нужен «Автовыбор» (белые и чёрные списки). */
+    fun isAutoSubscription(subid: String): Boolean {
+        if (subid.isBlank()) return false
+        val sub = MmkvManager.decodeSubscription(subid) ?: return false
+        return sub.remarks in DefaultSubscriptions.AUTO_SELECT_NAMES
+    }
+
     /**
      * Сервер считается российским, если об этом говорит название (флаг, RU, Russia, Россия)
-     * или если страна уже определена в кэше стран.
+     * или если страна уже определена в кэше стран (см. CountryDetector).
      */
     fun isRussian(profile: ProfileItem): Boolean {
         if (RU_REGEX.containsMatchIn(profile.remarks)) return true
-        val server = profile.server ?: return false
-        return MmkvManager.getCountryCache(server).equals("RU", ignoreCase = true)
+        return CountryDetector.getCountryCodes(profile.remarks, profile.server)
+            .any { it.equals("RU", ignoreCase = true) }
     }
 
     // region профиль
 
     /**
      * Создаёт профиль «Автовыбор» (если его нет) и ставит его первым в списке подписки.
-     * Работает только для подписки «Белые списки».
+     * Профиль помечается избранным, поэтому при любой сортировке (по пингу и т.д.)
+     * остаётся наверху списка.
+     * Работает только для подписок из DefaultSubscriptions.AUTO_SELECT_NAMES.
      *
      * @return GUID профиля «Автовыбор» или null, если подписка не подходит.
      */
     fun ensureProfile(subid: String): String? {
-        if (subid.isBlank()) return null
-        val sub = MmkvManager.decodeSubscription(subid) ?: return null
-        if (sub.remarks != DefaultSubscriptions.WHITELIST_NAME) return null
+        if (!isAutoSubscription(subid)) return null
 
         val list = MmkvManager.decodeServerList(subid)
         val existing = list.firstOrNull { guid ->
@@ -69,6 +80,11 @@ object AutoSelectManager {
         }
 
         if (existing != null) {
+            val profile = MmkvManager.decodeServerConfig(existing)
+            if (profile != null && !profile.isFavorite) {
+                profile.isFavorite = true
+                MmkvManager.encodeProfileDirect(existing, JsonUtil.toJson(profile))
+            }
             list.remove(existing)
             list.add(0, existing)
             MmkvManager.encodeServerList(list, subid)
@@ -80,6 +96,7 @@ object AutoSelectManager {
             description = "Самый быстрый сервер, без России"
             subscriptionId = subid
             policyGroupSubscriptionId = subid
+            isFavorite = true
         }
         val key = Utils.getUuid()
         MmkvManager.encodeProfileDirect(key, JsonUtil.toJson(profile))
@@ -93,7 +110,7 @@ object AutoSelectManager {
     // region выбор сервера
 
     /**
-     * Кандидаты автовыбора: серверы подписки «Белые списки» без России, только TCP-протоколы
+     * Кандидаты автовыбора: серверы подписки без России, только TCP-протоколы
      * (UDP-протоколы нельзя проверить TCP-пингом).
      */
     fun candidates(subid: String): List<Pair<String, ProfileItem>> {
@@ -112,21 +129,27 @@ object AutoSelectManager {
         }
     }
 
-    /** GUID текущего сервера автовыбора (может быть устаревшим, проверяйте через currentTarget). */
-    fun getCurrentGuid(): String? = MmkvManager.decodeSettingsString(KEY_CURRENT)
+    private fun guidKey(subid: String) = "$KEY_CURRENT:$subid"
 
+    private fun idKey(subid: String) = "$KEY_CURRENT_ID:$subid"
+
+    /** GUID текущего сервера автовыбора в подписке (может быть устаревшим, см. currentTarget). */
+    fun getCurrentGuid(subid: String): String? = MmkvManager.decodeSettingsString(guidKey(subid))
+
+    /** Запоминает текущий сервер; подписка определяется по самому профилю. */
     fun setCurrentGuid(guid: String) {
-        MmkvManager.encodeSettings(KEY_CURRENT, guid)
+        val profile = MmkvManager.decodeServerConfig(guid) ?: return
+        val subid = profile.subscriptionId
+        if (subid.isBlank()) return
+        MmkvManager.encodeSettings(guidKey(subid), guid)
         // GUID меняются при каждом обновлении подписки, поэтому запоминаем ещё и адрес сервера
-        MmkvManager.decodeServerConfig(guid)?.let {
-            MmkvManager.encodeSettings(KEY_CURRENT_ID, "${it.server}:${it.serverPort}")
-        }
+        MmkvManager.encodeSettings(idKey(subid), "${profile.server}:${profile.serverPort}")
     }
 
     /**
-     * Сервер, на котором сейчас работает «Автовыбор». Если сохранённый сервер исчез
-     * (подписка обновилась) или стал российским, берётся лучший по сохранённой задержке,
-     * а если замеров нет — первый кандидат.
+     * Сервер, на котором сейчас работает «Автовыбор» в подписке. Если сохранённый сервер
+     * исчез (подписка обновилась) или стал российским, берётся лучший по сохранённой
+     * задержке, а если замеров нет — первый кандидат.
      *
      * @return пара GUID + профиль или null, если кандидатов нет.
      */
@@ -134,12 +157,12 @@ object AutoSelectManager {
         val all = candidates(subid)
         if (all.isEmpty()) return null
 
-        getCurrentGuid()?.let { saved ->
+        getCurrentGuid(subid)?.let { saved ->
             all.firstOrNull { it.first == saved }?.let { return it }
         }
 
         // GUID устарел (подписку обновили) — ищем тот же сервер по адресу и порту
-        MmkvManager.decodeSettingsString(KEY_CURRENT_ID)?.let { id ->
+        MmkvManager.decodeSettingsString(idKey(subid))?.let { id ->
             all.firstOrNull { "${it.second.server}:${it.second.serverPort}" == id }?.let {
                 setCurrentGuid(it.first)
                 return it
@@ -155,6 +178,16 @@ object AutoSelectManager {
 
         setCurrentGuid(best.first)
         return best
+    }
+
+    /**
+     * Для профиля «Автовыбор» возвращает GUID его текущего сервера, для остальных — тот же GUID.
+     * Если у «Автовыбора» нет кандидатов, возвращает исходный GUID.
+     */
+    fun resolveGuid(guid: String): String {
+        val profile = MmkvManager.decodeServerConfig(guid) ?: return guid
+        if (!isAutoProfile(profile)) return guid
+        return currentTarget(profile.subscriptionId)?.first ?: guid
     }
 
     /**
